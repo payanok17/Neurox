@@ -1,4 +1,4 @@
-fastabi
+fastapi
 uvicorn
 alpaca-trade-api
 pandas

@@ -15,6 +15,7 @@ def send_test_email():
     sender_email = os.getenv("NOTIFY_EMAIL")
     sender_password = os.getenv("GMAIL_APP_TOKEN")
     receiver_email = os.getenv("NOTIFY_EMAIL")
+    
 
     if not sender_email or not sender_password:
         return {"error": "Missing Gmail credentials. Check .env setup."}

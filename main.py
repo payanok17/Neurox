@@ -1,8 +1,7 @@
 from fastapi import FastAPI
-from starlette.responses import JSONResponse
 import os
-import requests
-import base64
+import smtplib
+from email.message import EmailMessage
 
 app = FastAPI()
 
@@ -10,30 +9,19 @@ app = FastAPI()
 def read_root():
     return {"message": "NeuroX is live and connected."}
 
-@app.get("/test_email")
-def test_email():
-    access_token = os.getenv("GMAIL_ACCESS_TOKEN")
-    to_email = os.getenv("NOTIFY_EMAIL")
+@app.get("/test-email")
+def send_test_email():
+    email_address = os.getenv("NOTIFY_EMAIL")
+    email_password = os.getenv("GMAIL_TOKEN")
 
-    message = f"To: {to_email}\r\nSubject: NeuroX Alert\r\n\r\nTest email from NeuroX."
-    encoded_message = base64.urlsafe_b64encode(message.encode("utf-8")).decode("utf-8")
+    msg = EmailMessage()
+    msg['Subject'] = 'Test from NeuroX'
+    msg['From'] = email_address
+    msg['To'] = email_address
+    msg.set_content("✅ This is a test email from NeuroX — your system works!")
 
-    headers = {
-        "Authorization": f"Bearer {access_token}",
-        "Content-Type": "application/json"
-    }
+    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+        smtp.login(email_address, email_password)
+        smtp.send_message(msg)
 
-    body = {
-        "raw": encoded_message
-    }
-
-    r = requests.post(
-        "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
-        headers=headers,
-        json=body
-    )
-
-    if r.status_code in [200, 202]:
-        return {"status": "Email sent successfully"}
-    else:
-        return JSONResponse(status_code=r.status_code, content=r.json())
+    return {"message": "📬 Test email sent successfully!"}

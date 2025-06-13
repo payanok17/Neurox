@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 import os
 import smtplib
-from email.message import EmailMessage
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 app = FastAPI()
 
@@ -11,17 +12,23 @@ def read_root():
 
 @app.get("/test-email")
 def send_test_email():
-    email_address = os.getenv("NOTIFY_EMAIL")
-    email_password = os.getenv("GMAIL_TOKEN")
+    sender_email = os.getenv("NOTIFY_EMAIL")
+    sender_password = os.getenv("GMAIL_APP_TOKEN")
+    receiver_email = os.getenv("NOTIFY_EMAIL")
 
-    msg = EmailMessage()
-    msg['Subject'] = 'Test from NeuroX'
-    msg['From'] = email_address
-    msg['To'] = email_address
-    msg.set_content("✅ This is a test email from NeuroX — your system works!")
+    if not sender_email or not sender_password:
+        return {"error": "Missing Gmail credentials. Check .env setup."}
 
-    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-        smtp.login(email_address, email_password)
-        smtp.send_message(msg)
+    msg = MIMEMultipart()
+    msg["From"] = sender_email
+    msg["To"] = receiver_email
+    msg["Subject"] = "✅ NeuroX Mail Bridge Test"
+    msg.attach(MIMEText("This is a test email from your NeuroX system 🔗", "plain"))
 
-    return {"message": "📬 Test email sent successfully!"}
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(sender_email, sender_password)
+            server.sendmail(sender_email, receiver_email, msg.as_string())
+        return {"message": "📬 Test email sent successfully!"}
+    except Exception as e:
+        return {"error": f"Failed to send email: {str(e)}"}
